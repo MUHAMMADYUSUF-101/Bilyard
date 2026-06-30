@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bilyard Markazi</title>
+<style>
+  :root{
+    --bg-ink:#07090a;
+    --felt:#0e4631;
+    --felt-deep:#082f22;
+    --felt-light:#176a4c;
+    --brass:#d4af37;
+    --brass-dim:#8a6e22;
+    --brass-soft:rgba(212,175,55,.18);
+    --rail:#9b2c3b;
+    --rail-light:#c4404f;
+    --wood:#2b1d14;
+    --wood-light:#4a3322;
+    --chalk:#f4ecd8;
+    --ash:#9db3a6;
+    --line:rgba(212,175,55,.16);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(23,106,76,.35), transparent 55%),
+      radial-gradient(ellipse at 90% 0%, rgba(212,175,55,.08), transparent 45%),
+      var(--bg-ink);
+    color:var(--chalk);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Consolas,monospace; font-variant-numeric:tabular-nums;}
+  [hidden]{display:none !important;}
+
+  /* ---------- Login ---------- */
+  #login-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    width:100%; max-width:360px;
+    background:linear-gradient(165deg, var(--wood-light), var(--wood));
+    border:1px solid var(--brass-soft);
+    border-radius:18px; padding:32px 28px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .login-card .logo-row{display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:22px; text-align:center;}
+  .login-card h1{margin:0; font-size:19px; color:var(--brass); letter-spacing:.06em; text-transform:uppercase;}
+  .login-card p.sub{margin:0; font-size:12px; color:var(--ash);}
+  .login-error{
+    background:rgba(155,44,59,.25); border:1px solid var(--rail); color:#ffd2d6;
+    font-size:12.5px; padding:9px 12px; border-radius:8px; margin-bottom:14px;
+  }
+  .login-info{
+    background:rgba(212,175,55,.08); border:1px solid var(--brass-soft); color:var(--ash);
+    font-size:11px; padding:9px 12px; border-radius:8px; margin-top:16px; line-height:1.5;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    background:linear-gradient(180deg, var(--wood-light), var(--wood) 70%);
+    border-bottom:2px solid var(--brass-dim);
+    padding:18px 26px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand svg{flex:none;}
+  .brand h1{font-size:20px; margin:0; color:var(--brass); letter-spacing:.08em;}
+  .brand p{margin:0; font-size:11px; color:var(--ash); letter-spacing:.12em; text-transform:uppercase;}
+
+  .header-right{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  .clock{text-align:right; color:var(--ash); font-size:12px; letter-spacing:.05em;}
+  .clock .time{color:var(--chalk); font-size:18px; display:block;}
+  .conn{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ash);}
+  .conn .dot{width:7px; height:7px; border-radius:50%; background:var(--ash);}
+  .conn.online .dot{background:#5fd98a;}
+  .conn.offline .dot{background:var(--rail-light);}
+  .who{font-size:12px; color:var(--ash);}
+  .who b{color:var(--chalk);}
+  .logout-btn{
+    background:transparent; border:1px solid var(--line); color:var(--ash);
+    padding:7px 14px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700;
+  }
+  .logout-btn:hover{color:var(--chalk); border-color:var(--brass);}
+
+  nav{display:flex; gap:6px; background:rgba(0,0,0,.25); padding:5px; border-radius:999px; border:1px solid var(--line);}
+  nav button{
+    border:none; background:transparent; color:var(--ash);
+    padding:8px 16px; border-radius:999px; cursor:pointer;
+    font-size:12.5px; letter-spacing:.05em; font-weight:700; text-transform:uppercase;
+    transition:.2s;
+  }
+  nav button.active{background:var(--brass); color:#1d1605; box-shadow:0 2px 10px rgba(212,175,55,.4);}
+  nav button:not(.active):hover{color:var(--chalk);}
+
+  main{max-width:1180px; margin:0 auto; padding:28px 22px 60px;}
+  section[hidden]{display:none;}
+
+  /* ---------- Table grid ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(252px, 1fr));
+    gap:20px;
+  }
+  .table-card{
+    position:relative;
+    background:linear-gradient(160deg, var(--felt-light) 0%, var(--felt) 55%, var(--felt-deep) 100%);
+    border-radius:18px;
+    border:1px solid var(--line);
+    box-shadow:inset 0 0 0 6px rgba(0,0,0,.18), 0 8px 22px rgba(0,0,0,.35);
+    padding:18px 16px 16px;
+    display:flex; flex-direction:column; gap:12px;
+    transition:transform .18s, box-shadow .18s;
+  }
+  .table-card:hover{transform:translateY(-3px); box-shadow:inset 0 0 0 6px rgba(0,0,0,.18), 0 14px 28px rgba(0,0,0,.45), 0 0 0 1px var(--brass-soft);}
+  .card-top{display:flex; align-items:center; justify-content:space-between;}
+  .ball-badge{
+    width:42px; height:42px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:15px; color:var(--chalk);
+    border:2px solid var(--brass);
+    box-shadow:0 2px 6px rgba(0,0,0,.4), inset 0 2px 4px rgba(255,255,255,.15);
+    flex:none;
+  }
+  .badge-0{background:linear-gradient(160deg, var(--felt-light), var(--felt-deep));}
+  .badge-1{background:linear-gradient(160deg, var(--wood-light), var(--wood));}
+  .badge-2{background:linear-gradient(160deg, var(--rail-light), var(--rail));}
+  .badge-3{background:linear-gradient(160deg, #e7c768, var(--brass-dim)); color:#241b04;}
+
+  .status-pill{
+    display:flex; align-items:center; gap:6px;
+    font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    padding:5px 10px; border-radius:999px;
+  }
+  .status-pill.idle{background:rgba(255,255,255,.08); color:var(--ash);}
+  .status-pill.running{background:rgba(155,44,59,.35); color:#ffd9dd;}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--ash);}
+  .status-pill.running .dot{background:#ff6b78; box-shadow:0 0 0 0 rgba(255,107,120,.7); animation:pulse 1.4s infinite;}
+  @media (prefers-reduced-motion: reduce){ .status-pill.running .dot{animation:none;} }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,107,120,.55);}
+    70%{box-shadow:0 0 0 7px rgba(255,107,120,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,107,120,0);}
+  }
+
+  .table-name{margin:0; font-size:17px; font-weight:700; color:var(--chalk);}
+  .rate{font-size:12.5px; color:var(--ash);}
+  .rate b{color:var(--brass);}
+
+  .timer-zone{
+    background:rgba(0,0,0,.28);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 8px;
+    text-align:center;
+    min-height:78px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  }
+  .timer-digits{font-size:26px; font-weight:700; color:#ffe9b0; letter-spacing:.03em;}
+  .live-cost{font-size:13px; color:var(--brass); font-weight:700;}
+  .idle-hint{font-size:12.5px; color:var(--ash);}
+  .started-at{font-size:10.5px; color:var(--ash); margin-top:1px;}
+
+  .btn-main{
+    border:none; border-radius:10px; padding:11px 0;
+    font-size:14px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+    cursor:pointer; transition:.15s; color:#fff;
+  }
+  .btn-main.start{background:linear-gradient(160deg,#2fae72,#1c7a4e); }
+  .btn-main.start:hover{filter:brightness(1.12);}
+  .btn-main.stop{background:linear-gradient(160deg,var(--rail-light),var(--rail));}
+  .btn-main.stop:hover{filter:brightness(1.12);}
+  .btn-main:focus-visible{outline:2px solid var(--brass); outline-offset:2px;}
+
+  .link-btn{
+    background:none; border:none; color:var(--ash); font-size:11px; text-decoration:underline;
+    cursor:pointer; padding:0; align-self:center;
+  }
+  .link-btn:hover{color:var(--brass);}
+
+  .card-tools{display:flex; justify-content:flex-end; gap:6px; margin-top:-4px;}
+  .icon-btn{
+    background:transparent; border:1px solid var(--line); color:var(--ash);
+    width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:13px;
+    transition:.15s;
+  }
+  .icon-btn:hover{color:var(--chalk); border-color:var(--brass); background:rgba(212,175,55,.08);}
+
+  .add-card{
+    align-items:center; justify-content:center; text-align:center;
+    background:rgba(255,255,255,.02);
+    border:2px dashed var(--line);
+    cursor:pointer; color:var(--ash); min-height:230px;
+  }
+  .add-card:hover{border-color:var(--brass); color:var(--brass); background:rgba(212,175,55,.05);}
+  .add-card .plus{font-size:34px; font-weight:800; line-height:1;}
+
+  .empty-state{
+    grid-column:1/-1; text-align:center; padding:70px 20px; color:var(--ash);
+    border:1px dashed var(--line); border-radius:18px;
+  }
+  .empty-state h3{color:var(--chalk); margin:0 0 8px;}
+
+  /* ---------- Analytics ---------- */
+  .stats-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:18px; margin-bottom:26px;}
+  .stat-card{
+    background:linear-gradient(160deg, var(--felt-light), var(--felt-deep));
+    border:1px solid var(--brass-soft);
+    border-radius:16px; padding:18px 20px;
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+  }
+  .stat-card .label{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ash); font-weight:700;}
+  .stat-card .value{font-size:26px; font-weight:700; color:var(--brass); margin-top:6px;}
+  .stat-card .sub{font-size:11.5px; color:var(--ash); margin-top:4px;}
+
+  .panel{
+    background:rgba(0,0,0,.22);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:24px;
+    max-width:480px;
+  }
+  .panel.wide{max-width:none;}
+  .panel h2{margin:0 0 16px; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--brass);}
+
+  .bars{display:flex; align-items:flex-end; gap:14px; height:140px; padding:0 6px;}
+  .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end;}
+  .bar{width:100%; max-width:36px; border-radius:6px 6px 2px 2px; background:linear-gradient(180deg, var(--brass), var(--brass-dim)); min-height:3px; transition:height .4s;}
+  .bar-label{font-size:10.5px; color:var(--ash); letter-spacing:.04em;}
+  .bar-val{font-size:10px; color:var(--brass); font-weight:700;}
+
+  .ledger-row{
+    display:grid; grid-template-columns:42px 1fr auto auto auto; align-items:center; gap:14px;
+    padding:12px 6px; border-bottom:1px solid var(--line);
+  }
+  .ledger-row:last-child{border-bottom:none;}
+  .ledger-row .name{font-weight:700; color:var(--chalk); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .tag{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:999px;}
+  .tag.active{background:rgba(47,174,114,.2); color:#7fe3ab;}
+  .tag.deleted{background:rgba(155,44,59,.25); color:#ff9ca6;}
+  .ledger-row .meta{font-size:11.5px; color:var(--ash);}
+  .ledger-row .amount{font-weight:800; color:var(--brass); text-align:right; min-width:110px;}
+  .ledger-row.deleted-row{opacity:.6;}
+  .restore-link{background:none; border:none; color:var(--ash); font-size:11px; text-decoration:underline; cursor:pointer; padding:0;}
+  .restore-link:hover{color:var(--brass);}
+
+  /* ---------- Settings ---------- */
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11.5px; color:var(--ash); margin-bottom:6px; letter-spacing:.04em;}
+  .field input{
+    width:100%; padding:10px 12px; border-radius:9px;
+    border:1px solid var(--line); background:rgba(0,0,0,.3); color:var(--chalk);
+    font-size:14px;
+  }
+  .field input:focus{outline:none; border-color:var(--brass);}
+  .field .hint{font-size:11px; color:var(--ash); margin-top:4px;}
+  .row-2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(4,4,3,.7);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal{
+    background:linear-gradient(165deg, var(--wood-light), var(--wood));
+    border:1px solid var(--brass-soft);
+    border-radius:16px; width:100%; max-width:380px; padding:24px;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);
+    animation:pop .16s ease-out;
+  }
+  @keyframes pop{from{opacity:0; transform:scale(.96);} to{opacity:1; transform:scale(1);}}
+  .modal h3{margin:0 0 16px; color:var(--brass); font-size:16px; letter-spacing:.04em;}
+  .modal-actions{display:flex; gap:10px; margin-top:18px;}
+  .btn{flex:1; padding:10px 0; border-radius:9px; border:none; font-weight:700; font-size:13px; cursor:pointer; letter-spacing:.03em;}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ash);}
+  .btn-ghost:hover{color:var(--chalk); border-color:var(--brass);}
+  .btn-brass{background:linear-gradient(160deg,#e7c768,var(--brass-dim)); color:#241b04;}
+  .btn-brass:hover{filter:brightness(1.08);}
+  .btn-rail{background:linear-gradient(160deg,var(--rail-light),var(--rail)); color:#fff;}
+  .btn-rail:hover{filter:brightness(1.1);}
+  .modal p.confirm-text{color:var(--chalk); font-size:14px; line-height:1.5; margin:0 0 6px;}
+
+  #toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--wood); border:1px solid var(--brass); color:var(--chalk);
+    padding:12px 20px; border-radius:10px; font-size:13px; font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    opacity:0; pointer-events:none; transition:.25s;
+    z-index:60; max-width:90vw; text-align:center;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:560px){
+    header{padding:14px 16px;}
+    .brand h1{font-size:16px;}
+    .clock{display:none;}
+    main{padding:20px 14px 50px;}
+    .row-2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo-row">
+      <svg width="40" height="40" viewBox="0 0 34 34" fill="none">
+        <circle cx="17" cy="17" r="15.5" fill="#0e4631" stroke="#d4af37" stroke-width="2"/>
+        <circle cx="17" cy="17" r="9" fill="#f4ecd8"/>
+        <text x="17" y="21" text-anchor="middle" font-size="11" font-weight="800" fill="#0e4631" font-family="Arial">8</text>
+      </svg>
+      <h1>Bilyard Markazi</h1>
+      <p class="sub">Tizimga kirish</p>
+    </div>
+    <div id="login-error" class="login-error" hidden></div>
+    <div class="field">
+      <label for="login-user">Login</label>
+      <input id="login-user" type="text" autocomplete="username" />
+    </div>
+    <div class="field">
+      <label for="login-pass">Parol</label>
+      <input id="login-pass" type="password" autocomplete="current-password" />
+    </div>
+    <div class="modal-actions" style="margin-top:8px;">
+      <button class="btn btn-brass" id="login-submit" style="flex:1;">Kirish</button>
+    </div>
+    <div class="login-info">Bu hisob butun klub uchun umumiy. Istalgan qurilmadan shu login va parol bilan kirib, stollarni boshqarish mumkin.</div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" hidden>
+  <header>
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+        <circle cx="17" cy="17" r="15.5" fill="#0e4631" stroke="#d4af37" stroke-width="2"/>
+        <circle cx="17" cy="17" r="9" fill="#f4ecd8"/>
+        <text x="17" y="21" text-anchor="middle" font-size="11" font-weight="800" fill="#0e4631" font-family="Arial">8</text>
+      </svg>
+      <div>
+        <h1>Bilyard Markazi</h1>
+        <p>Vaqt asosida hisob-kitob tizimi</p>
+      </div>
+    </div>
+    <nav>
+      <button class="active" data-tab="tables">Stollar</button>
+      <button data-tab="analytics">Analitika</button>
+      <button data-tab="settings">Sozlamalar</button>
+    </nav>
+    <div class="header-right">
+      <div class="clock">
+        <span id="clock-date">—</span>
+        <span class="time mono" id="clock-time">00:00:00</span>
+      </div>
+      <div class="conn" id="conn-status"><span class="dot"></span><span>Ulanmoqda...</span></div>
+      <div class="who">Hisob: <b id="who-username">—</b></div>
+      <button class="logout-btn" id="logout-btn">Chiqish</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-tables">
+      <div class="grid" id="tables-grid"></div>
+    </section>
+
+    <section id="view-analytics" hidden>
+      <div class="stats-row" id="stats-row"></div>
+      <div class="panel wide">
+        <h2>So'nggi 7 kun</h2>
+        <div class="bars" id="bars-chart"></div>
+      </div>
+      <div class="panel wide">
+        <h2>Stollar bo'yicha hisob (o'chirilganlar bilan)</h2>
+        <div id="ledger"></div>
+      </div>
+    </section>
+
+    <section id="view-settings" hidden>
+      <div class="panel">
+        <h2>Hisob ma'lumotlarini o'zgartirish</h2>
+        <div class="field">
+          <label for="set-current-pass">Joriy parol</label>
+          <input id="set-current-pass" type="password" autocomplete="current-password" />
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="set-new-user">Yangi login</label>
+            <input id="set-new-user" type="text" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="set-new-pass">Yangi parol</label>
+            <input id="set-new-pass" type="password" autocomplete="new-password" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="set-new-pass2">Yangi parolni tasdiqlang</label>
+          <input id="set-new-pass2" type="password" autocomplete="new-password" />
+        </div>
+        <div class="hint" style="margin-bottom:14px;">Faqat shu bitta umumiy hisobni tahrirlash mumkin — yangi hisob qo'shilmaydi.</div>
+        <button class="btn btn-brass" id="save-credentials-btn" style="width:100%;">Saqlash</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="modal" id="modal"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const API = "/.netlify/functions/data";
+
+  // ---------------- State ----------------
+  let token = localStorage.getItem('bm_token') || null;
+  let username = localStorage.getItem('bm_username') || '';
+  let tables = [];
+  let sessions = [];
+  let currentTab = 'tables';
+
+  const gridEl = document.getElementById('tables-grid');
+  const overlay = document.getElementById('overlay');
+  const modalEl = document.getElementById('modal');
+  const toastEl = document.getElementById('toast');
+  const loginScreen = document.getElementById('login-screen');
+  const appEl = document.getElementById('app');
+  const connStatus = document.getElementById('conn-status');
+
+  // ---------------- API helper ----------------
+  async function apiCall(payload){
+    try{
+      const res = await fetch(API, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      let data;
+      try{ data = await res.json(); }catch(e){ data = { ok:false, error:"Server javobini o'qib bo'lmadi" }; }
+      setConn(true);
+      return data;
+    }catch(e){
+      setConn(false);
+      return { ok:false, error:"Serverga ulanib bo'lmadi" };
+    }
+  }
+
+  function setConn(online){
+    connStatus.className = 'conn ' + (online ? 'online' : 'offline');
+    connStatus.querySelector('span:last-child').textContent = online ? 'Ulangan' : 'Offline';
+  }
+
+  // ---------------- Helpers ----------------
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function formatSom(n){
+    n = Math.round(n||0);
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + " so'm";
+  }
+  function formatHMS(ms){
+    let s = Math.floor(Math.max(0,ms)/1000);
+    const h = Math.floor(s/3600); s -= h*3600;
+    const m = Math.floor(s/60); s -= m*60;
+    const pad = v => v.toString().padStart(2,'0');
+    return pad(h)+':'+pad(m)+':'+pad(s);
+  }
+  function activeSessionFor(tableId){
+    return sessions.find(s => s.tableId === tableId && s.end === null);
+  }
+  function nextTableNumber(){
+    return tables.reduce((max,t)=> Math.max(max, t.number||0), 0) + 1;
+  }
+  function escapeHtml(s){
+    const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+  }
+  function fmtTimeShort(ts){
+    const d = new Date(ts);
+    return d.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  // ---------------- Persist (server) ----------------
+  async function saveState(){
+    const res = await apiCall({ action:'save', token, tables, sessions });
+    if(!res.ok && res.error === 'unauthorized') forceLogout();
+    return res.ok;
+  }
+
+  async function refreshState(silent){
+    const res = await apiCall({ action:'getState', token });
+    if(!res.ok){
+      if(res.error === 'unauthorized') forceLogout();
+      return false;
+    }
+    tables = res.tables || [];
+    sessions = res.sessions || [];
+    if(res.username) username = res.username;
+    document.getElementById('who-username').textContent = username;
+    if(!silent){
+      renderTables();
+      if(currentTab === 'analytics') renderAnalytics();
+    } else {
+      // silent background refresh: re-render only what's visible
+      if(currentTab === 'tables') renderTables();
+      if(currentTab === 'analytics') renderAnalytics();
+    }
+    return true;
+  }
+
+  // ---------------- Auth ----------------
+  function showApp(){
+    loginScreen.hidden = true;
+    appEl.hidden = false;
+    document.getElementById('who-username').textContent = username;
+  }
+  function showLogin(msg){
+    appEl.hidden = true;
+    loginScreen.hidden = false;
+    const errEl = document.getElementById('login-error');
+    if(msg){ errEl.textContent = msg; errEl.hidden = false; } else { errEl.hidden = true; }
+  }
+  function forceLogout(){
+    token = null;
+    localStorage.removeItem('bm_token');
+    showLogin('Sessiya tugadi, qaytadan kiring');
+  }
+
+  document.getElementById('login-submit').addEventListener('click', doLogin);
+  document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  document.getElementById('login-user').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+  async function doLogin(){
+    const u = document.getElementById('login-user').value.trim();
+    const p = document.getElementById('login-pass').value;
+    if(!u || !p){ showLogin('Login va parolni kiriting'); return; }
+    const btn = document.getElementById('login-submit');
+    btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
+    const res = await apiCall({ action:'login', username:u, password:p });
+    btn.disabled = false; btn.textContent = 'Kirish';
+    if(res.ok){
+      token = res.token;
+      username = res.username;
+      localStorage.setItem('bm_token', token);
+      localStorage.setItem('bm_username', username);
+      showApp();
+      await refreshState(false);
+      startPolling();
+    } else {
+      showLogin(res.error || "Login yoki parol noto'g'ri");
+    }
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', async ()=>{
+    await apiCall({ action:'logout', token });
+    token = null;
+    localStorage.removeItem('bm_token');
+    showLogin();
+  });
+
+  document.getElementById('save-credentials-btn').addEventListener('click', async ()=>{
+    const currentPassword = document.getElementById('set-current-pass').value;
+    const newUsername = document.getElementById('set-new-user').value.trim();
+    const newPassword = document.getElementById('set-new-pass').value;
+    const newPassword2 = document.getElementById('set-new-pass2').value;
+    if(!currentPassword || !newUsername || !newPassword){ showToast('Barcha maydonlarni to\'ldiring'); return; }
+    if(newPassword !== newPassword2){ showToast('Yangi parollar mos kelmadi'); return; }
+    const res = await apiCall({ action:'changeCredentials', token, currentPassword, newUsername, newPassword });
+    if(res.ok){
+      username = newUsername;
+      localStorage.setItem('bm_username', username);
+      document.getElementById('who-username').textContent = username;
+      document.getElementById('set-current-pass').value = '';
+      document.getElementById('set-new-user').value = '';
+      document.getElementById('set-new-pass').value = '';
+      document.getElementById('set-new-pass2').value = '';
+      showToast('Hisob ma\'lumotlari yangilandi');
+    } else {
+      showToast(res.error || 'Xatolik yuz berdi');
+    }
+  });
+
+  // ---------------- Rendering: Tables ----------------
+  function renderTables(){
+    const active = tables.filter(t => !t.deleted);
+    if(active.length === 0){
+      gridEl.innerHTML = `
+        <div class="empty-state">
+          <h3>Hali stollar yo'q</h3>
+          <p>Birinchi bilyard stolingizni qo'shing va vaqt hisobini boshlang.</p>
+        </div>
+        <div class="table-card add-card" data-action="add">
+          <div class="plus">+</div>
+          <div>Yangi stol qo'shish</div>
+        </div>`;
+      return;
+    }
+    let html = '';
+    active.sort((a,b)=>a.number-b.number).forEach(t=>{
+      const sess = activeSessionFor(t.id);
+      const running = !!sess;
+      const badgeClass = 'badge-' + (t.number % 4);
+      html += `
+      <div class="table-card" data-id="${t.id}">
+        <div class="card-top">
+          <div class="ball-badge ${badgeClass}">${t.number}</div>
+          <div class="status-pill ${running?'running':'idle'}"><span class="dot"></span>${running?"O'YNAMOQDA":"BO'SH"}</div>
+        </div>
+        <h3 class="table-name">${escapeHtml(t.name)}</h3>
+        <div class="rate">Narx: <b>${formatSom(t.rate)}</b> / soat</div>
+        <div class="timer-zone">
+          ${running
+            ? `<div class="timer-digits mono" data-timer>${formatHMS(Date.now()-sess.start)}</div><div class="live-cost mono" data-cost>${formatSom((Date.now()-sess.start)/3600000*t.rate)}</div><div class="started-at">Boshlangan: ${fmtTimeShort(sess.start)}</div>`
+            : `<div class="idle-hint">Stol bo'sh turibdi</div>`}
+        </div>
+        <button class="btn-main ${running?'stop':'start'}" data-action="${running?'stop':'start'}">${running?'\u25a0 To\'xtatish':'\u25b6 Boshlash'}</button>
+        ${!running ? `<button class="link-btn" data-action="custom-start">Boshqa vaqtda boshlagan?</button>` : ''}
+        <div class="card-tools">
+          <button class="icon-btn" data-action="edit" title="Tahrirlash">\u270e</button>
+          <button class="icon-btn" data-action="delete" title="O'chirish">\ud83d\uddd1</button>
+        </div>
+      </div>`;
+    });
+    html += `
+      <div class="table-card add-card" data-action="add">
+        <div class="plus">+</div>
+        <div>Yangi stol qo'shish</div>
+      </div>`;
+    gridEl.innerHTML = html;
+  }
+
+  function tickRunningCards(){
+    if(currentTab !== 'tables') return;
+    document.querySelectorAll('.table-card[data-id]').forEach(card=>{
+      const id = card.getAttribute('data-id');
+      const t = tables.find(x=>x.id===id);
+      if(!t) return;
+      const sess = activeSessionFor(id);
+      if(!sess) return;
+      const timerEl = card.querySelector('[data-timer]');
+      const costEl = card.querySelector('[data-cost]');
+      const elapsed = Date.now() - sess.start;
+      if(timerEl) timerEl.textContent = formatHMS(elapsed);
+      if(costEl) costEl.textContent = formatSom(elapsed/3600000*t.rate);
+    });
+  }
+
+  // ---------------- Actions: Tables / Sessions ----------------
+  async function startSession(tableId, customStart){
+    if(activeSessionFor(tableId)) return;
+    const start = customStart || Date.now();
+    sessions.push({ id:uid(), tableId, start, end:null, amount:null });
+    renderTables();
+    await saveState();
+  }
+
+  async function stopSession(tableId){
+    const sess = activeSessionFor(tableId);
+    if(!sess) return;
+    const t = tables.find(x=>x.id===tableId);
+    sess.end = Date.now();
+    const hours = (sess.end - sess.start)/3600000;
+    sess.amount = Math.round(hours * (t ? t.rate : 0));
+    renderTables();
+    await saveState();
+    showToast(`${t?t.name:'Stol'}: to'lov ${formatSom(sess.amount)} hisoblandi`);
+    if(currentTab === 'analytics') renderAnalytics();
+  }
+
+  async function deleteTable(tableId){
+    const t = tables.find(x=>x.id===tableId);
+    if(!t) return;
+    if(activeSessionFor(tableId)){
+      showToast("Avval stolni to'xtating, keyin o'chiring");
+      return;
+    }
+    const ok = await confirmDialog(`"${escapeHtml(t.name)}" stolini o'chirishni tasdiqlaysizmi? O'ynalgan vaqtlar tarixi va to'lovlari Analitika bo'limida saqlanib qoladi.`);
+    if(!ok) return;
+    t.deleted = true;
+    t.deletedAt = Date.now();
+    renderTables();
+    await saveState();
+    showToast(`"${t.name}" o'chirildi`);
+  }
+
+  async function restoreTable(tableId){
+    const t = tables.find(x=>x.id===tableId);
+    if(!t) return;
+    t.deleted = false;
+    t.deletedAt = null;
+    await saveState();
+    renderTables();
+    renderAnalytics();
+    showToast(`"${t.name}" qayta tiklandi`);
+  }
+
+  // ---------------- Modal: Add / Edit table ----------------
+  function openTableModal(tableId){
+    const editing = !!tableId;
+    const t = editing ? tables.find(x=>x.id===tableId) : null;
+    const defaultName = editing ? t.name : (nextTableNumber()+'-stol');
+    const defaultRate = editing ? t.rate : 30000;
+
+    modalEl.innerHTML = `
+      <h3>${editing ? "Stolni tahrirlash" : "Yangi stol qo'shish"}</h3>
+      <div class="field">
+        <label for="f-name">Stol nomi</label>
+        <input id="f-name" type="text" value="${escapeHtml(defaultName)}" />
+      </div>
+      <div class="field">
+        <label for="f-rate">Bir soatlik narxi (so'm)</label>
+        <input id="f-rate" type="number" min="0" step="1000" value="${defaultRate}" />
+        <div class="hint">Narx faqat yangi o'yinlarga qo'llanadi, eski to'lovlar o'zgarmaydi.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-action="close">Bekor qilish</button>
+        <button class="btn btn-brass" data-action="save">${editing ? "Saqlash" : "Qo'shish"}</button>
+      </div>
+    `;
+    overlay.hidden = false;
+    document.getElementById('f-name').focus();
+
+    modalEl.querySelector('[data-action="close"]').onclick = closeModal;
+    modalEl.querySelector('[data-action="save"]').onclick = async () => {
+      const name = document.getElementById('f-name').value.trim();
+      const rate = parseFloat(document.getElementById('f-rate').value);
+      if(!name){ showToast("Stol nomini kiriting"); return; }
+      if(!(rate >= 0)){ showToast("To'g'ri narx kiriting"); return; }
+      if(editing){
+        t.name = name; t.rate = rate;
+      } else {
+        tables.push({ id:uid(), number:nextTableNumber(), name, rate, createdAt:Date.now(), deleted:false, deletedAt:null });
+      }
+      closeModal();
+      renderTables();
+      await saveState();
+      showToast(editing ? "O'zgarishlar saqlandi" : `"${name}" qo'shildi`);
+    };
+  }
+
+  function openCustomStartModal(tableId){
+    const t = tables.find(x=>x.id===tableId);
+    if(!t) return;
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0,10);
+    const timeStr = now.toTimeString().slice(0,5);
+    modalEl.innerHTML = `
+      <h3>"${escapeHtml(t.name)}" — boshlanish vaqti</h3>
+      <p class="confirm-text" style="font-size:13px; color:var(--ash);">Qurilma vaqti bo'yicha emas, balki o'yin haqiqatda boshlangan sana va vaqtni kiriting.</p>
+      <div class="row-2">
+        <div class="field">
+          <label for="cs-date">Sana</label>
+          <input id="cs-date" type="date" value="${dateStr}" />
+        </div>
+        <div class="field">
+          <label for="cs-time">Vaqt</label>
+          <input id="cs-time" type="time" value="${timeStr}" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-action="close">Bekor qilish</button>
+        <button class="btn btn-brass" data-action="confirm">Boshlash</button>
+      </div>
+    `;
+    overlay.hidden = false;
+    modalEl.querySelector('[data-action="close"]').onclick = closeModal;
+    modalEl.querySelector('[data-action="confirm"]').onclick = async () => {
+      const d = document.getElementById('cs-date').value;
+      const tm = document.getElementById('cs-time').value;
+      if(!d || !tm){ showToast("Sana va vaqtni kiriting"); return; }
+      const ts = new Date(d+'T'+tm+':00').getTime();
+      if(isNaN(ts)){ showToast("Noto'g'ri sana/vaqt"); return; }
+      if(ts > Date.now()+60000){ showToast("Boshlanish vaqti kelajakda bo'lishi mumkin emas"); return; }
+      closeModal();
+      await startSession(tableId, ts);
+    };
+  }
+
+  function closeModal(){
+    overlay.hidden = true;
+    modalEl.innerHTML = '';
+  }
+
+  function confirmDialog(message){
+    return new Promise(resolve=>{
+      modalEl.innerHTML = `
+        <h3>Tasdiqlash</h3>
+        <p class="confirm-text">${message}</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" data-action="no">Bekor qilish</button>
+          <button class="btn btn-rail" data-action="yes">Ha, o'chirish</button>
+        </div>
+      `;
+      overlay.hidden = false;
+      modalEl.querySelector('[data-action="no"]').onclick = ()=>{ closeModal(); resolve(false); };
+      modalEl.querySelector('[data-action="yes"]').onclick = ()=>{ closeModal(); resolve(true); };
+    });
+  }
+
+  // ---------------- Toast ----------------
+  let toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2800);
+  }
+
+  // ---------------- Analytics ----------------
+  const WEEKDAYS = ['Yak','Dush','Sesh','Chor','Pay','Jum','Shan'];
+
+  function rangeSum(fromTs, toTs){
+    return sessions
+      .filter(s => s.end && s.end >= fromTs && s.end <= toTs)
+      .reduce((sum,s)=> sum + (s.amount||0), 0);
+  }
+
+  function renderAnalytics(){
+    const now = new Date();
+    const startToday = new Date(now); startToday.setHours(0,0,0,0);
+    const start7 = Date.now() - 7*24*3600000;
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+    const todaySum = rangeSum(startToday.getTime(), Date.now());
+    const weekSum = rangeSum(start7, Date.now());
+    const monthSum = rangeSum(startMonth, Date.now());
+
+    const finished = sessions.filter(s=>s.end);
+    const todayCount = finished.filter(s=>s.end>=startToday.getTime()).length;
+
+    document.getElementById('stats-row').innerHTML = `
+      <div class="stat-card">
+        <div class="label">Bugun</div>
+        <div class="value mono">${formatSom(todaySum)}</div>
+        <div class="sub">${todayCount} o'yin yakunlandi</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">So'nggi 7 kun</div>
+        <div class="value mono">${formatSom(weekSum)}</div>
+        <div class="sub">Joriy haftalik tushum</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Shu oy</div>
+        <div class="value mono">${formatSom(monthSum)}</div>
+        <div class="sub">${now.toLocaleDateString('uz-UZ',{month:'long'})} oyi uchun</div>
+      </div>
+    `;
+
+    const days = [];
+    let maxVal = 0;
+    for(let i=6;i>=0;i--){
+      const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+      const from = d.getTime();
+      const to = from + 24*3600000;
+      const val = rangeSum(from, to);
+      maxVal = Math.max(maxVal, val);
+      days.push({ label: WEEKDAYS[d.getDay()], val });
+    }
+    document.getElementById('bars-chart').innerHTML = days.map(d=>{
+      const h = maxVal>0 ? Math.max(3, Math.round(d.val/maxVal*120)) : 3;
+      return `<div class="bar-col">
+        <div class="bar-val mono">${d.val>0 ? formatSom(d.val).replace(" so'm",''):''}</div>
+        <div class="bar" style="height:${h}px"></div>
+        <div class="bar-label">${d.label}</div>
+      </div>`;
+    }).join('');
+
+    const byTable = {};
+    finished.forEach(s=>{
+      byTable[s.tableId] = byTable[s.tableId] || { count:0, ms:0, amount:0 };
+      byTable[s.tableId].count++;
+      byTable[s.tableId].ms += (s.end - s.start);
+      byTable[s.tableId].amount += (s.amount||0);
+    });
+    const rows = tables
+      .filter(t => byTable[t.id])
+      .map(t => ({ t, ...byTable[t.id] }))
+      .sort((a,b)=> b.amount - a.amount);
+
+    if(rows.length === 0){
+      document.getElementById('ledger').innerHTML = `<div class="empty-state" style="border:none; padding:30px 10px;">Hali yakunlangan o'yinlar yo'q.</div>`;
+    } else {
+      document.getElementById('ledger').innerHTML = rows.map(r=>{
+        const hours = (r.ms/3600000).toFixed(1);
+        return `
+        <div class="ledger-row ${r.t.deleted?'deleted-row':''}">
+          <div class="ball-badge badge-${r.t.number%4}" style="width:32px;height:32px;font-size:12px;">${r.t.number}</div>
+          <div class="name">
+            ${escapeHtml(r.t.name)}
+            <span class="tag ${r.t.deleted?'deleted':'active'}">${r.t.deleted?"O'chirilgan":"Faol"}</span>
+            ${r.t.deleted ? `<button class="restore-link" data-restore="${r.t.id}">Qayta tiklash</button>` : ''}
+          </div>
+          <div class="meta">${r.count} o'yin</div>
+          <div class="meta">${hours} soat</div>
+          <div class="amount mono">${formatSom(r.amount)}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('ledger').querySelectorAll('[data-restore]').forEach(btn=>{
+        btn.onclick = () => restoreTable(btn.getAttribute('data-restore'));
+      });
+    }
+  }
+
+  // ---------------- Clock ----------------
+  function tickClock(){
+    const now = new Date();
+    document.getElementById('clock-time').textContent = now.toLocaleTimeString('uz-UZ');
+    document.getElementById('clock-date').textContent = now.toLocaleDateString('uz-UZ',{weekday:'short', day:'numeric', month:'short'});
+  }
+
+  // ---------------- Event delegation ----------------
+  gridEl.addEventListener('click', (e)=>{
+    const card = e.target.closest('.table-card');
+    if(!card) return;
+    if(card.classList.contains('add-card')){
+      openTableModal(null);
+      return;
+    }
+    const actionBtn = e.target.closest('[data-action]');
+    if(!actionBtn) return;
+    const id = card.getAttribute('data-id');
+    const action = actionBtn.getAttribute('data-action');
+    if(action === 'start') startSession(id);
+    else if(action === 'stop') stopSession(id);
+    else if(action === 'edit') openTableModal(id);
+    else if(action === 'delete') deleteTable(id);
+    else if(action === 'custom-start') openCustomStartModal(id);
+  });
+
+  document.querySelectorAll('nav button[data-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('nav button[data-tab]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.getAttribute('data-tab');
+      document.getElementById('view-tables').hidden = currentTab !== 'tables';
+      document.getElementById('view-analytics').hidden = currentTab !== 'analytics';
+      document.getElementById('view-settings').hidden = currentTab !== 'settings';
+      if(currentTab === 'analytics') renderAnalytics();
+    });
+  });
+
+  overlay.addEventListener('click', (e)=>{
+    if(e.target === overlay) closeModal();
+  });
+
+  // ---------------- Polling (multi-device sync) ----------------
+  let pollInterval = null;
+  function startPolling(){
+    if(pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(()=> refreshState(true), 6000);
+  }
+
+  // ---------------- Init ----------------
+  async function init(){
+    tickClock();
+    setInterval(tickClock, 1000);
+    setInterval(tickRunningCards, 1000);
+
+    if(!token){
+      showLogin();
+      return;
+    }
+    showApp();
+    gridEl.innerHTML = `<div class="empty-state"><h3>Yuklanmoqda...</h3><p>Ma'lumotlar serverdan olinmoqda</p></div>`;
+    const ok = await refreshState(false);
+    if(ok) startPolling();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
